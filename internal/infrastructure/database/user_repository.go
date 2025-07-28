@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.io/xhkzeroone/goframex/internal/domain"
 	"time"
 
@@ -12,20 +13,52 @@ import (
 	"gorm.io/gorm"
 )
 
+type UserModel struct {
+	ID        uuid.UUID `gorm:"primarykey;column:id;type:uuid"`
+	PartnerId string    `gorm:"column:partner_id"`
+	Total     int       `gorm:"column:total"`
+	UserName  string    `gorm:"column:user_name"`
+	FirstName string    `gorm:"column:first_name"`
+	LastName  string    `gorm:"column:last_name"`
+	Email     string    `gorm:"column:email"`
+	Status    string    `gorm:"column:status"`
+	CreatedAt time.Time `gorm:"column:created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at"`
+}
+
+func (u *UserModel) TableName() string {
+	return "user_tbl"
+}
+
+func (u *UserModel) BeforeCreate(ctx *gorm.DB) (err error) {
+	u.ID = uuid.New()
+	u.CreatedAt = time.Now()
+	return
+}
+
+func (u *UserModel) BeforeUpdate(ctx *gorm.DB) (err error) {
+	u.UpdatedAt = time.Now()
+	return
+}
+
+func (u *UserModel) GetTotal() int {
+	return u.Total
+}
+
 type userRepository struct {
-	db    *gormx.DataSource
+	db    *gormx.Repository[UserModel, uuid.UUID]
 	cache *redisx.Redis
 }
 
 func NewUserRepository(db *gormx.DataSource, cache *redisx.Redis) domain.UserRepository {
 	return &userRepository{
-		db:    db,
+		db:    gormx.NewRepository[UserModel, uuid.UUID](db),
 		cache: cache,
 	}
 }
 
 func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
-	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+	if err := r.db.Create(user).Error; err != nil {
 		logrusx.Log.Errorf("Failed to create user: %v", err)
 		return err
 	}

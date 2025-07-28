@@ -11,14 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type GetHandler interface {
-	Handle(ctx *Context, headers, query, path map[string]string) error
-}
-
-type PostHandler interface {
-	Handle(ctx *Context, body []byte, headers, query, path map[string]string) error
-}
-
 type Context struct {
 	*gin.Context
 	bodyBytes []byte
@@ -150,32 +142,32 @@ func (g *RouterGroup) Group(path string, middleware ...Middleware) *RouterGroup 
 	}
 }
 
-func (g *RouterGroup) GET(path string, handler GetHandler, middleware ...Middleware) {
+func (g *RouterGroup) GET(path string, handler HandlerFunc, middleware ...Middleware) {
 	chain := &MiddlewareChain{}
 	chain.Use(middleware...)
 	final := Compose(g.collectMiddleware(), chain)
-	g.group.GET(path, final.Wrap(AdaptGetHandler(handler)))
+	g.group.GET(path, final.Wrap(handler))
 }
 
-func (g *RouterGroup) POST(path string, handler PostHandler, middleware ...Middleware) {
+func (g *RouterGroup) POST(path string, handler HandlerFunc, middleware ...Middleware) {
 	chain := &MiddlewareChain{}
 	chain.Use(middleware...)
 	final := Compose(g.collectMiddleware(), chain)
-	g.group.POST(path, final.Wrap(AdaptPostHandler(handler)))
+	g.group.POST(path, final.Wrap(handler))
 }
 
-func (g *RouterGroup) PUT(path string, handler PostHandler, middleware ...Middleware) {
+func (g *RouterGroup) PUT(path string, handler HandlerFunc, middleware ...Middleware) {
 	chain := &MiddlewareChain{}
 	chain.Use(middleware...)
 	final := Compose(g.collectMiddleware(), chain)
-	g.group.PUT(path, final.Wrap(AdaptPostHandler(handler)))
+	g.group.PUT(path, final.Wrap(handler))
 }
 
-func (g *RouterGroup) DELETE(path string, handler PostHandler, middleware ...Middleware) {
+func (g *RouterGroup) DELETE(path string, handler HandlerFunc, middleware ...Middleware) {
 	chain := &MiddlewareChain{}
 	chain.Use(middleware...)
 	final := Compose(g.collectMiddleware(), chain)
-	g.group.DELETE(path, final.Wrap(AdaptPostHandler(handler)))
+	g.group.DELETE(path, final.Wrap(handler))
 }
 
 func (g *RouterGroup) collectMiddleware() *MiddlewareChain {
@@ -265,19 +257,19 @@ func (s *Server) RoutesGroup(relativePath string, routes ...Route) {
 	registerRoutes(group, routes)
 }
 
-func (s *Server) GET(relativePath string, handler GetHandler, middleware ...Middleware) {
+func (s *Server) GET(relativePath string, handler HandlerFunc, middleware ...Middleware) {
 	s.rootGroup.GET(relativePath, handler, middleware...)
 }
 
-func (s *Server) POST(relativePath string, handler PostHandler, middleware ...Middleware) {
+func (s *Server) POST(relativePath string, handler HandlerFunc, middleware ...Middleware) {
 	s.rootGroup.POST(relativePath, handler, middleware...)
 }
 
-func (s *Server) PUT(relativePath string, handler PostHandler, middleware ...Middleware) {
+func (s *Server) PUT(relativePath string, handler HandlerFunc, middleware ...Middleware) {
 	s.rootGroup.PUT(relativePath, handler, middleware...)
 }
 
-func (s *Server) DELETE(relativePath string, handler PostHandler, middleware ...Middleware) {
+func (s *Server) DELETE(relativePath string, handler HandlerFunc, middleware ...Middleware) {
 	s.rootGroup.DELETE(relativePath, handler, middleware...)
 }
 
@@ -355,18 +347,4 @@ func (s *Server) HealthCheckWithFunc(healthCheck HealthCheckFunc) {
 			_ = s.Stop(context.Background())
 		}()
 	})
-}
-
-func AdaptPostHandler(h PostHandler) HandlerFunc {
-	return func(c *Context) error {
-		err := h.Handle(c, c.Body(), c.Headers(), c.Query(), c.PathVar())
-		return err
-	}
-}
-
-func AdaptGetHandler(h GetHandler) HandlerFunc {
-	return func(c *Context) error {
-		err := h.Handle(c, c.Headers(), c.Query(), c.PathVar())
-		return err
-	}
 }

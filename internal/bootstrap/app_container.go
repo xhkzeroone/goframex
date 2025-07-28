@@ -1,13 +1,14 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
-
-	uc "github.io/xhkzeroone/goframex/internal/application"
+	"github.io/xhkzeroone/goframex/internal/config"
+	"github.io/xhkzeroone/goframex/internal/delivery/http"
 	"github.io/xhkzeroone/goframex/internal/domain"
 	"github.io/xhkzeroone/goframex/internal/infrastructure/database"
 	"github.io/xhkzeroone/goframex/internal/infrastructure/external"
-	"github.io/xhkzeroone/goframex/internal/interfaces/http"
+	uc "github.io/xhkzeroone/goframex/internal/usecase"
 	"github.io/xhkzeroone/goframex/pkg/cache/redisx"
 	"github.io/xhkzeroone/goframex/pkg/database/gormx"
 	"github.io/xhkzeroone/goframex/pkg/http/ginx"
@@ -16,40 +17,30 @@ import (
 	"gorm.io/driver/postgres"
 )
 
-// Infrastructure layer
 type Infrastructure struct {
 	DB         *gormx.DataSource
 	Cache      *redisx.Redis
 	UserClient *restyx.Client
 }
 
-// Repository layer
 type Repositories struct {
 	UserRepository domain.UserRepository
 }
 
-// External services layer
 type ExternalServices struct {
 	UserService domain.UserService
 }
 
-// Usecase layer
 type Usecases struct {
 	UserUsecase domain.UserUsecase
 }
 
-// Handler layer
 type Handlers struct {
-	// User handlers
-	CreateUserHandler  *http.CreateUserHandler
-	GetUserByIDHandler *http.GetUserByIDHandler
-	GetUsersHandler    *http.GetUsersHandler
-	UpdateUserHandler  *http.UpdateUserHandler
-	DeleteUserHandler  *http.DeleteUserHandler
+	UserHandler *http.UserHandler
 }
 
-type AppContainer struct {
-	Config           *Config
+type Application struct {
+	Config           *config.Config
 	Infrastructure   *Infrastructure
 	Repositories     *Repositories
 	ExternalServices *ExternalServices
@@ -58,24 +49,31 @@ type AppContainer struct {
 	Server           *ginx.Server
 }
 
-func (app *AppContainer) Start() error {
+func (app *Application) Start() error {
 	return app.Server.Start()
 }
 
-func NewContainer() (*AppContainer, error) {
-	// Initialize logger
+func (app *Application) Stop() error {
+	return app.Server.Stop(context.Background())
+}
+
+func NewApp() (*Application, error) {
 	if err := logrusx.New(); err != nil {
 		return nil, err
 	}
+	logrusx.Log.SetFormatter(&logrusx.JSONFormatter{
+		TimestampFormat:       "2006-01-02 15:04:05",
+		MsgFormatter:          logrusx.GetMessageFormater(),
+		FunctionNameFormatter: logrusx.GetFunctionNameFormatter(),
+	})
 
-	// Initialize config
-	config, err := NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// Initialize infrastructure
-	infrastructure, err := initInfrastructure(config)
+	infrastructure, err := initInfrastructure(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -93,10 +91,10 @@ func NewContainer() (*AppContainer, error) {
 	handlers := initHandlers(usecases)
 
 	// Initialize server
-	server := initServer(config, handlers, infrastructure, repositories, externalServices)
+	server := initServer(cfg, handlers, infrastructure, repositories, externalServices)
 
-	return &AppContainer{
-		Config:           config,
+	return &Application{
+		Config:           cfg,
 		Infrastructure:   infrastructure,
 		Repositories:     repositories,
 		ExternalServices: externalServices,
@@ -106,7 +104,7 @@ func NewContainer() (*AppContainer, error) {
 	}, nil
 }
 
-func initInfrastructure(config *Config) (*Infrastructure, error) {
+func initInfrastructure(config *config.Config) (*Infrastructure, error) {
 	// Initialize database
 	db, err := initDatabase(config.Database)
 	if err != nil {
@@ -150,15 +148,11 @@ func initUsecases(repositories *Repositories, externalServices *ExternalServices
 func initHandlers(usecases *Usecases) *Handlers {
 	return &Handlers{
 		// User handlers
-		CreateUserHandler:  http.NewCreateUserHandler(usecases.UserUsecase),
-		GetUserByIDHandler: http.NewGetUserByIDHandler(usecases.UserUsecase),
-		GetUsersHandler:    http.NewGetUsersHandler(usecases.UserUsecase),
-		UpdateUserHandler:  http.NewUpdateUserHandler(usecases.UserUsecase),
-		DeleteUserHandler:  http.NewDeleteUserHandler(usecases.UserUsecase),
+		UserHandler: http.NewUserHandler(usecases.UserUsecase),
 	}
 }
 
-func initServer(config *Config, handlers *Handlers, infrastructure *Infrastructure, repositories *Repositories, externalServices *ExternalServices) *ginx.Server {
+func initServer(config *config.Config, handlers *Handlers, infrastructure *Infrastructure, repositories *Repositories, externalServices *ExternalServices) *ginx.Server {
 	server := ginx.New(config.Server)
 
 	// Health check

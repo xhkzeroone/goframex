@@ -1,11 +1,9 @@
-package application
+package usecase
 
 import (
 	"context"
 	"fmt"
-
 	"github.io/xhkzeroone/goframex/internal/domain"
-
 	"github.io/xhkzeroone/goframex/pkg/logger/logrusx"
 )
 

@@ -67,15 +67,13 @@ type UserResponse struct {
 
 func NewUserResponse(user *domain.User) *UserResponse {
 	return &UserResponse{
-		ID:        user.ID,
-		Name:      user.Name,
-		Email:     user.Email,
-		Age:       user.Age,
-		Phone:     user.Phone,
-		Address:   user.Address,
-		IsActive:  user.IsActive,
-		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:       user.ID,
+		Name:     user.Name,
+		Email:    user.Email,
+		Age:      user.Age,
+		Phone:    user.Phone,
+		Address:  user.Address,
+		IsActive: user.IsActive,
 	}
 }
 

@@ -19,16 +19,7 @@ func NewUserHandler(userUsecase domain.UserUsecase) *UserHandler {
 	}
 }
 
-// CreateUserHandler handles POST /users
-type CreateUserHandler struct {
-	userUsecase domain.UserUsecase
-}
-
-func NewCreateUserHandler(userUsecase domain.UserUsecase) *CreateUserHandler {
-	return &CreateUserHandler{userUsecase: userUsecase}
-}
-
-func (h *CreateUserHandler) Handle(ctx *ginx.Context, body []byte, headers, query, path map[string]string) error {
+func (h *UserHandler) CreateUser(ctx *ginx.Context) error {
 	var req CreateUserRequest
 	if err := ctx.Bind(&req); err != nil {
 		logrusx.Log.Errorf("Failed to bind create user request: %v", err)
@@ -58,17 +49,8 @@ func (h *CreateUserHandler) Handle(ctx *ginx.Context, body []byte, headers, quer
 	return nil
 }
 
-// GetUserByIDHandler handles GET /users/:id
-type GetUserByIDHandler struct {
-	userUsecase domain.UserUsecase
-}
-
-func NewGetUserByIDHandler(userUsecase domain.UserUsecase) *GetUserByIDHandler {
-	return &GetUserByIDHandler{userUsecase: userUsecase}
-}
-
-func (h *GetUserByIDHandler) Handle(ctx *ginx.Context, headers, query, path map[string]string) error {
-	id := path["id"]
+func (h *UserHandler) GetUserByID(ctx *ginx.Context) error {
+	id := ctx.PathVar()["id"]
 	if id == "" {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{
 			Error:   "User ID is required",
@@ -96,26 +78,17 @@ func (h *GetUserByIDHandler) Handle(ctx *ginx.Context, headers, query, path map[
 	return nil
 }
 
-// GetUsersHandler handles GET /users
-type GetUsersHandler struct {
-	userUsecase domain.UserUsecase
-}
-
-func NewGetUsersHandler(userUsecase domain.UserUsecase) *GetUsersHandler {
-	return &GetUsersHandler{userUsecase: userUsecase}
-}
-
-func (h *GetUsersHandler) Handle(ctx *ginx.Context, headers, query, path map[string]string) error {
+func (h *UserHandler) GetUsers(ctx *ginx.Context) error {
 	limit := 10
 	offset := 0
 
-	if limitStr := query["limit"]; limitStr != "" {
+	if limitStr := ctx.Query()["limit"]; limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
 			limit = l
 		}
 	}
 
-	if offsetStr := query["offset"]; offsetStr != "" {
+	if offsetStr := ctx.Query()["offset"]; offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o
 		}
@@ -146,17 +119,8 @@ func (h *GetUsersHandler) Handle(ctx *ginx.Context, headers, query, path map[str
 	return nil
 }
 
-// UpdateUserHandler handles PUT /users/:id
-type UpdateUserHandler struct {
-	userUsecase domain.UserUsecase
-}
-
-func NewUpdateUserHandler(userUsecase domain.UserUsecase) *UpdateUserHandler {
-	return &UpdateUserHandler{userUsecase: userUsecase}
-}
-
-func (h *UpdateUserHandler) Handle(ctx *ginx.Context, body []byte, headers, query, path map[string]string) error {
-	id := path["id"]
+func (h *UserHandler) UpdateUser(ctx *ginx.Context) error {
+	id := ctx.PathVar()["id"]
 	if id == "" {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{
 			Error:   "User ID is required",
@@ -195,17 +159,8 @@ func (h *UpdateUserHandler) Handle(ctx *ginx.Context, body []byte, headers, quer
 	return nil
 }
 
-// DeleteUserHandler handles DELETE /users/:id
-type DeleteUserHandler struct {
-	userUsecase domain.UserUsecase
-}
-
-func NewDeleteUserHandler(userUsecase domain.UserUsecase) *DeleteUserHandler {
-	return &DeleteUserHandler{userUsecase: userUsecase}
-}
-
-func (h *DeleteUserHandler) Handle(ctx *ginx.Context, body []byte, headers, query, path map[string]string) error {
-	id := path["id"]
+func (h *UserHandler) DeleteUser(ctx *ginx.Context) error {
+	id := ctx.PathVar()["id"]
 	if id == "" {
 		ctx.JSON(http.StatusBadRequest, ErrorResponse{
 			Error:   "User ID is required",

@@ -2,20 +2,17 @@ package domain
 
 import (
 	"context"
-	"time"
 )
 
 type User struct {
-	ID        string    `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Name      string    `json:"name" gorm:"not null"`
-	Email     string    `json:"email" gorm:"uniqueIndex;not null"`
-	Password  string    `json:"-" gorm:"not null"`
-	Age       int       `json:"age"`
-	Phone     string    `json:"phone"`
-	Address   string    `json:"address"`
-	IsActive  bool      `json:"is_active" gorm:"default:true"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"-"`
+	Age      int    `json:"age"`
+	Phone    string `json:"phone"`
+	Address  string `json:"address"`
+	IsActive bool   `json:"is_active"`
 }
 
 type UserRepository interface {

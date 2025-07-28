@@ -106,7 +106,7 @@ type Handlers struct {
 // Khởi tạo container
 app, err := bootstrap.NewContainer()
 if err != nil {
-    log.Fatalf("Failed to initialize application: %v", err)
+    log.Fatalf("Failed to initialize usecase: %v", err)
 }
 
 // Truy cập các component

@@ -84,7 +84,7 @@ func (c *Client) exchange(opt ReqOption) (*resty.Response, error) {
 			reqResty.SetQueryParams(r.Params)
 		}
 		if r.Body != nil {
-			reqResty.SetHeader("Content-Type", "application/json")
+			reqResty.SetHeader("Content-Type", "usecase/json")
 			reqResty.SetBody(r.Body)
 		}
 

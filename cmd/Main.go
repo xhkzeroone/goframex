@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -11,9 +10,9 @@ import (
 )
 
 func main() {
-	app, err := bootstrap.NewContainer()
+	app, err := bootstrap.NewApp()
 	if err != nil {
-		log.Fatalf("Failed to initialize application: %v", err)
+		log.Fatalf("Failed to initialize usecase: %v", err)
 	}
 
 	// Handle graceful shutdown
@@ -29,8 +28,7 @@ func main() {
 	<-quit
 	log.Println("Shutting down server...")
 
-	ctx := context.Background()
-	if err := app.Server.Stop(ctx); err != nil {
+	if err := app.Stop(); err != nil {
 		log.Printf("Error stopping server: %v", err)
 	}
 

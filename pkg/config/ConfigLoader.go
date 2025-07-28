@@ -38,7 +38,7 @@ func resolveEnvInViper() {
 
 func loadFile() {
 	dir, _ := os.Getwd()
-	configPath := filepath.Join(dir, "./resources")
+	configPath := filepath.Join(dir, "./config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(configPath)
 	if err := viper.ReadInConfig(); err != nil {
