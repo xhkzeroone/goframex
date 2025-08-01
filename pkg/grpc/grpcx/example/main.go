@@ -24,7 +24,7 @@ func AuthInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func main() {
-	server := grpcx.New(&grpcx.Config{
+	server := grpcx.NewServer(&grpcx.Config{
 		Network: "tcp",
 		Address: ":50051",
 		Debug:   true,

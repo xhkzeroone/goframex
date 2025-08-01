@@ -11,6 +11,12 @@ import (
 	"syscall"
 )
 
+type Config struct {
+	Network string `mapstructure:"network" yaml:"network"` // "tcp" hoặc "unix"
+	Address string `mapstructure:"address" yaml:"address"` // ":50051" hoặc "/tmp/app.sock"
+	Debug   bool   `mapstructure:"debug" yaml:"debug"`
+}
+
 type Registrar struct {
 	RegisterFunc       func(server *grpc.Server)
 	ServiceDesc        *grpc.ServiceDesc
@@ -37,7 +43,7 @@ type Server struct {
 	globalInterceptors []grpc.UnaryServerInterceptor
 }
 
-func New(config *Config) *Server {
+func NewServer(config *Config) *Server {
 	network := config.Network
 	if network == "" {
 		network = "tcp" // fallback mặc định
