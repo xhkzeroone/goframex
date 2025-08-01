@@ -15,7 +15,7 @@ type Registrar struct {
 	RegisterFunc       func(server *grpc.Server)
 	ServiceDesc        *grpc.ServiceDesc
 	Interceptor        []grpc.UnaryServerInterceptor
-	MethodInterceptors map[string]grpc.UnaryServerInterceptor
+	MethodInterceptors map[string][]grpc.UnaryServerInterceptor
 }
 
 func NewRegistrar[T any](registerFunc func(grpc.ServiceRegistrar, T), desc *grpc.ServiceDesc, impl T, interceptor ...grpc.UnaryServerInterceptor) Registrar {
@@ -31,13 +31,13 @@ func NewRegistrar[T any](registerFunc func(grpc.ServiceRegistrar, T), desc *grpc
 type Server struct {
 	*grpc.Server
 	listener           net.Listener
-	config             *Config
-	interceptors       map[string]grpc.UnaryServerInterceptor // by service
-	methodInterceptors map[string]grpc.UnaryServerInterceptor // by full method
+	config             *ServerConfig
+	interceptors       map[string]grpc.UnaryServerInterceptor   // by service
+	methodInterceptors map[string][]grpc.UnaryServerInterceptor // by full method
 	globalInterceptors []grpc.UnaryServerInterceptor
 }
 
-func New(config *Config) *Server {
+func NewServer(config *ServerConfig) *Server {
 	network := config.Network
 	if network == "" {
 		network = "tcp" // fallback mặc định
@@ -57,7 +57,7 @@ func New(config *Config) *Server {
 		config:             config,
 		listener:           listener,
 		interceptors:       make(map[string]grpc.UnaryServerInterceptor),
-		methodInterceptors: make(map[string]grpc.UnaryServerInterceptor),
+		methodInterceptors: make(map[string][]grpc.UnaryServerInterceptor),
 	}
 
 	s.Server = grpc.NewServer(
@@ -79,9 +79,10 @@ func (s *Server) Register(services ...Registrar) {
 			s.interceptors[svc.ServiceDesc.ServiceName] = ChainUnaryInterceptors(svc.Interceptor...)
 		}
 
-		for fullMethod, interceptor := range svc.MethodInterceptors {
-			s.methodInterceptors[fullMethod] = interceptor
+		for fullMethod, interceptors := range svc.MethodInterceptors {
+			s.methodInterceptors[fullMethod] = append(s.methodInterceptors[fullMethod], interceptors...)
 		}
+
 	}
 }
 
@@ -123,31 +124,32 @@ func (s *Server) Shutdown(force bool) {
 
 func (s *Server) dispatchInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		finalHandler := handler
+		var interceptors []grpc.UnaryServerInterceptor
 
-		// Ưu tiên interceptor theo method
-		if interceptor, ok := s.methodInterceptors[info.FullMethod]; ok {
-			finalHandler = func(ctx context.Context, req interface{}) (interface{}, error) {
-				return interceptor(ctx, req, info, handler)
-			}
-		} else {
-			// Fallback theo service name
-			for serviceName, interceptor := range s.interceptors {
-				if strings.HasPrefix(info.FullMethod, "/"+serviceName+"/") {
-					finalHandler = func(ctx context.Context, req interface{}) (interface{}, error) {
-						return interceptor(ctx, req, info, handler)
-					}
-					break
-				}
-			}
-		}
-
+		// Global interceptors
 		if len(s.globalInterceptors) > 0 {
-			globalChain := ChainUnaryInterceptors(s.globalInterceptors...)
-			return globalChain(ctx, req, info, finalHandler)
+			interceptors = append(interceptors, s.globalInterceptors...)
 		}
 
-		return finalHandler(ctx, req)
+		// Service-level interceptor
+		for serviceName, interceptor := range s.interceptors {
+			if strings.HasPrefix(info.FullMethod, "/"+serviceName+"/") {
+				interceptors = append(interceptors, interceptor)
+				break
+			}
+		}
+
+		// Method-level interceptors
+		if mInterceptors, ok := s.methodInterceptors[info.FullMethod]; ok {
+			interceptors = append(interceptors, mInterceptors...)
+		}
+
+		if len(interceptors) == 0 {
+			return handler(ctx, req)
+		}
+
+		chain := ChainUnaryInterceptors(interceptors...)
+		return chain(ctx, req, info, handler)
 	}
 }
 

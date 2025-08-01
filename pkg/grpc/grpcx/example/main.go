@@ -11,6 +11,7 @@ import (
 
 func MetricsInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 	// Call actual handler
+	fmt.Println("MetricsInterceptor")
 	resp, err := handler(ctx, req)
 	return resp, err
 }
@@ -24,7 +25,7 @@ func AuthInterceptor() grpc.UnaryServerInterceptor {
 }
 
 func main() {
-	server := grpcx.New(&grpcx.Config{
+	server := grpcx.NewServer(&grpcx.ServerConfig{
 		Network: "tcp",
 		Address: ":50051",
 		Debug:   true,
@@ -34,8 +35,10 @@ func main() {
 
 	svc := grpcx.NewRegistrar(healthpb.RegisterHealthServer, &healthpb.Health_ServiceDesc, NewHealthService(), MetricsInterceptor)
 
-	svc.MethodInterceptors = map[string]grpc.UnaryServerInterceptor{
-		"/proto.Health/Liveness": AuthInterceptor(),
+	svc.MethodInterceptors = map[string][]grpc.UnaryServerInterceptor{
+		"/proto.Health/Liveness": {
+			AuthInterceptor(),
+		},
 	}
 
 	server.Register(svc)

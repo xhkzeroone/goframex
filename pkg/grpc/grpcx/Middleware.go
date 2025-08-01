@@ -23,3 +23,11 @@ func ServerLoggingInterceptor(ctx context.Context, req interface{}, info *grpc.U
 	log.Printf("[gRPC] <-- %s | Status: %s | Duration: %s | Response: %+v", info.FullMethod, st.Code(), time.Since(start), resp)
 	return resp, err
 }
+
+func ClientLoggingInterceptor(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	start := time.Now()
+	log.Printf("[gRPC REQUEST] Method: %s | Request: %+v", method, req)
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	log.Printf("[gRPC RESPONSE] Method: %s | Reply: %+v | Error: %v | Duration: %s", method, reply, err, time.Since(start))
+	return err
+}
