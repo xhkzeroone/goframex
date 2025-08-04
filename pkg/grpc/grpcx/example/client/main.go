@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.io/xhkzeroone/goframex/pkg/async"
 	"github.io/xhkzeroone/goframex/pkg/grpc/grpcx"
 	"github.io/xhkzeroone/goframex/pkg/grpc/grpcx/proto/healthpb"
 	"google.golang.org/grpc"
@@ -33,10 +34,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	resp, err := stub.Liveness(ctx, &healthpb.HealthCheckRequest{})
+	fut := async.Async(func() (*healthpb.HealthCheckResponse, error) {
+		return stub.Liveness(ctx, &healthpb.HealthCheckRequest{})
+	})
+
+	res, err := fut.Wait(3 * time.Second)
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		fmt.Println("❌ Error:", err)
+	} else {
+		fmt.Println("✅ Result:", res)
 	}
 
-	fmt.Println("Response:", resp.Status.String())
 }
