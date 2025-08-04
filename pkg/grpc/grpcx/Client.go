@@ -28,12 +28,8 @@ func NewClient(cfg *ClientConfig, extraOpts ...grpc.DialOption) (*Client, error)
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	if len(cfg.ClientInterceptors) > 0 {
-		interceptors = append(interceptors, cfg.ClientInterceptors...)
-	}
-
 	if len(interceptors) > 0 {
-		opts = append(opts, grpc.WithUnaryInterceptor(chainUnaryClientInterceptors(interceptors...)))
+		opts = append(opts, grpc.WithUnaryInterceptor(ChainUnaryClientInterceptors(interceptors...)))
 	}
 
 	opts = append(opts, extraOpts...)
@@ -74,7 +70,7 @@ func debugUnaryClientInterceptor(ctx context.Context, method string, req interfa
 	return err
 }
 
-func chainUnaryClientInterceptors(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
+func ChainUnaryClientInterceptors(interceptors ...grpc.UnaryClientInterceptor) grpc.UnaryClientInterceptor {
 	n := len(interceptors)
 	if n == 0 {
 		return func(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption,

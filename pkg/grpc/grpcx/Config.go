@@ -1,7 +1,5 @@
 package grpcx
 
-import "google.golang.org/grpc"
-
 type ServerConfig struct {
 	Network string `mapstructure:"network" yaml:"network"` // "tcp" hoặc "unix"
 	Address string `mapstructure:"address" yaml:"address"` // ":50051" hoặc "/tmp/app.sock"
@@ -9,10 +7,9 @@ type ServerConfig struct {
 }
 
 type ClientConfig struct {
-	Target             string `mapstructure:"target" yaml:"target"`
-	Debug              bool   `mapstructure:"debug" yaml:"debug"`
-	IsTLS              bool   `mapstructure:"is_tls" yaml:"is_tls"`
-	ClientInterceptors []grpc.UnaryClientInterceptor
+	Target string `mapstructure:"target" yaml:"target"`
+	Debug  bool   `mapstructure:"debug" yaml:"debug"`
+	IsTLS  bool   `mapstructure:"is_tls" yaml:"is_tls"`
 }
 
 type Config struct {

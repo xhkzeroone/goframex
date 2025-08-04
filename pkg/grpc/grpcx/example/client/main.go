@@ -10,16 +10,19 @@ import (
 	"time"
 )
 
+func AuthInterceptor(ctx context.Context, method string, req interface{}, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+	log.Printf("[gRPC REQUEST] - AuthInterceptor: Method: %s | Request: %+v", method, req)
+	err := invoker(ctx, method, req, reply, cc, opts...)
+	return err
+}
+
 func main() {
 	cfg := &grpcx.ClientConfig{
 		Target: "localhost:50051",
 		Debug:  true,
-		ClientInterceptors: []grpc.UnaryClientInterceptor{
-			grpcx.ClientLoggingInterceptor,
-		},
 	}
 
-	client, err := grpcx.NewClient(cfg)
+	client, err := grpcx.NewClient(cfg, grpc.WithChainUnaryInterceptor(grpcx.ClientLoggingInterceptor, AuthInterceptor))
 	if err != nil {
 		log.Fatalf("failed to create client: %v", err)
 	}
