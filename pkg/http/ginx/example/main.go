@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
+	"net/http"
+
 	"github.io/xhkzeroone/goframex/pkg/http/ginx"
 	"github.io/xhkzeroone/goframex/pkg/logger/logrusx"
-	"net/http"
 )
 
 func main() {
@@ -41,7 +42,7 @@ func main() {
 	srv.POST("/usr", func(ctx *ginx.Context) error {
 		name := string(ctx.Body())
 		if name == "" {
-			ctx.JSON(http.StatusBadRequest, map[string]string{"error": "name is required"})
+			ctx.JSON(http.StatusBadRequest, map[string]string{"error": "name is required!"})
 			return nil
 		}
 
